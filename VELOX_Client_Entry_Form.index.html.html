@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VELOX — Client Data Entry</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:       #1F3864;
+    --navy-deep:  #0D1E3A;
+    --gold:       #C9A84C;
+    --gold-light: #F5E9C3;
+    --gold-pale:  #FDFAF2;
+    --white:      #FFFFFF;
+    --off-white:  #F8F6F1;
+    --smoke:      #F0EDE6;
+    --ink:        #1A1A2E;
+    --muted:      #6B7280;
+    --success:    #166534;
+    --success-bg: #DCFCE7;
+    --error:      #991B1B;
+    --error-bg:   #FEE2E2;
+    --border:     #DDD8CC;
+    --radius:     6px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--navy-deep);
+    min-height: 100vh;
+    color: var(--ink);
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Background texture */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 0%, rgba(201,168,76,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 80% at 80% 100%, rgba(31,56,100,0.8) 0%, transparent 60%),
+      repeating-linear-gradient(0deg, transparent, transparent 60px, rgba(255,255,255,0.015) 60px, rgba(255,255,255,0.015) 61px),
+      repeating-linear-gradient(90deg, transparent, transparent 60px, rgba(255,255,255,0.015) 60px, rgba(255,255,255,0.015) 61px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── HEADER ── */
+  .site-header {
+    position: relative; z-index: 10;
+    background: linear-gradient(135deg, var(--navy-deep) 0%, #162D56 100%);
+    border-bottom: 2px solid var(--gold);
+    padding: 0;
+  }
+
+  .header-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 28px 32px 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .logo-mark {
+    width: 54px; height: 54px;
+    background: linear-gradient(135deg, var(--gold) 0%, #A8852E 100%);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px; font-weight: 700;
+    color: var(--navy-deep);
+    letter-spacing: -1px;
+    flex-shrink: 0;
+    box-shadow: 0 4px 20px rgba(201,168,76,0.35);
+  }
+
+  .header-text h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 26px; font-weight: 600;
+    color: var(--white);
+    letter-spacing: 0.5px;
+    line-height: 1.1;
+  }
+
+  .header-text h1 span { color: var(--gold); }
+
+  .header-text p {
+    font-size: 11.5px; font-weight: 400;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .header-badge {
+    margin-left: auto;
+    background: rgba(201,168,76,0.15);
+    border: 1px solid rgba(201,168,76,0.4);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 11px; font-weight: 500;
+    color: var(--gold);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  /* ── PROGRESS BAR ── */
+  .progress-wrap {
+    background: rgba(255,255,255,0.05);
+    border-bottom: 1px solid rgba(201,168,76,0.2);
+    padding: 0 32px;
+    position: relative; z-index: 10;
+  }
+
+  .progress-inner {
+    max-width: 900px; margin: 0 auto;
+    display: flex; gap: 0;
+  }
+
+  .progress-step {
+    flex: 1;
+    padding: 14px 10px 12px;
+    display: flex; align-items: center; gap: 8px;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.25s;
+    opacity: 0.45;
+  }
+
+  .progress-step.active  { opacity: 1; border-bottom-color: var(--gold); }
+  .progress-step.done    { opacity: 0.7; border-bottom-color: var(--success); }
+
+  .step-num {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    border: 1.5px solid rgba(255,255,255,0.2);
+    font-size: 10px; font-weight: 600;
+    color: rgba(255,255,255,0.5);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.25s;
+  }
+
+  .progress-step.active  .step-num { background: var(--gold); border-color: var(--gold); color: var(--navy-deep); }
+  .progress-step.done    .step-num { background: var(--success); border-color: var(--success); color: white; }
+
+  .step-label {
+    font-size: 10.5px; font-weight: 500;
+    color: rgba(255,255,255,0.6);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    line-height: 1.2;
+  }
+
+  .progress-step.active .step-label { color: var(--gold); }
+
+  /* ── MAIN LAYOUT ── */
+  .main {
+    position: relative; z-index: 5;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 32px 32px 80px;
+  }
+
+  /* ── FORM CARD ── */
+  .form-card {
+    background: var(--white);
+    border-radius: 10px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.2);
+    overflow: hidden;
+    display: none;
+  }
+
+  .form-card.active { display: block; animation: slideIn 0.3s ease; }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-header {
+    background: linear-gradient(135deg, var(--navy) 0%, #2A4A80 100%);
+    padding: 22px 32px;
+    display: flex; align-items: center; gap: 14px;
+    border-bottom: 3px solid var(--gold);
+  }
+
+  .card-header-icon {
+    width: 38px; height: 38px;
+    background: rgba(201,168,76,0.2);
+    border: 1.5px solid rgba(201,168,76,0.5);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  .card-header h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px; font-weight: 600;
+    color: var(--white);
+  }
+
+  .card-header p {
+    font-size: 12px; color: rgba(255,255,255,0.5);
+    margin-top: 2px;
+  }
+
+  .card-body { padding: 32px; }
+
+  /* ── FIELD GRID ── */
+  .field-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px 24px;
+  }
+
+  .field-grid .span-2 { grid-column: span 2; }
+  .field-grid .span-1 { grid-column: span 1; }
+
+  @media (max-width: 640px) {
+    .field-grid { grid-template-columns: 1fr; }
+    .field-grid .span-2 { grid-column: span 1; }
+    .header-inner { flex-wrap: wrap; }
+    .header-badge { margin-left: 0; }
+    .progress-step .step-label { display: none; }
+    .main { padding: 20px 16px 60px; }
+    .card-body { padding: 20px; }
+  }
+
+  /* ── FIELD ── */
+  .field { display: flex; flex-direction: column; gap: 6px; }
+
+  .field label {
+    font-size: 11.5px; font-weight: 600;
+    color: var(--navy);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .field label .req {
+    color: #DC2626; font-size: 13px; line-height: 1;
+  }
+
+  .field label .hint {
+    font-size: 10px; font-weight: 400;
+    color: var(--muted); text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .field input,
+  .field select,
+  .field textarea {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13.5px;
+    color: var(--ink);
+    background: var(--off-white);
+    transition: all 0.2s;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  .field select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+    cursor: pointer;
+  }
+
+  .field input:focus,
+  .field select:focus,
+  .field textarea:focus {
+    border-color: var(--navy);
+    background: var(--white);
+    box-shadow: 0 0 0 3px rgba(31,56,100,0.08);
+  }
+
+  .field input.error,
+  .field select.error { border-color: #DC2626; background: #FEF2F2; }
+
+  .field textarea {
+    resize: vertical; min-height: 80px;
+    line-height: 1.5;
+  }
+
+  .field input[type="date"] { cursor: pointer; }
+
+  .field input[type="number"] { font-family: 'DM Mono', monospace; }
+
+  .error-msg {
+    font-size: 11px; color: #DC2626; font-weight: 500;
+    display: none; align-items: center; gap: 4px;
+  }
+
+  .error-msg.show { display: flex; }
+
+  /* ── SECTION DIVIDER ── */
+  .section-divider {
+    grid-column: span 2;
+    display: flex; align-items: center; gap: 12px;
+    margin: 6px 0 2px;
+  }
+
+  .section-divider span {
+    font-size: 10px; font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .section-divider::before,
+  .section-divider::after {
+    content: '';
+    flex: 1; height: 1px;
+    background: linear-gradient(to right, transparent, var(--border));
+  }
+
+  .section-divider::before {
+    background: linear-gradient(to left, transparent, var(--border));
+  }
+
+  /* ── PHONE ROW ── */
+  .phone-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  /* ── AMOUNT FIELDS ── */
+  .amount-wrap { position: relative; }
+  .amount-wrap .currency-prefix {
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px; font-weight: 500;
+    color: var(--muted);
+    pointer-events: none;
+  }
+  .amount-wrap input { padding-left: 30px; font-family: 'DM Mono', monospace; }
+
+  /* ── NAVIGATION BUTTONS ── */
+  .nav-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--smoke);
+  }
+
+  .btn {
+    padding: 12px 28px;
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13.5px; font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    letter-spacing: 0.3px;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 1.5px solid var(--border);
+  }
+
+  .btn-ghost:hover { border-color: var(--navy); color: var(--navy); }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--navy) 0%, #2A4A80 100%);
+    color: var(--white);
+    box-shadow: 0 4px 16px rgba(31,56,100,0.3);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(31,56,100,0.4);
+  }
+
+  .btn-submit {
+    background: linear-gradient(135deg, #B8860B 0%, var(--gold) 50%, #D4A017 100%);
+    color: var(--navy-deep);
+    box-shadow: 0 4px 16px rgba(201,168,76,0.4);
+    padding: 13px 36px;
+    font-size: 14px;
+  }
+
+  .btn-submit:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 24px rgba(201,168,76,0.5);
+  }
+
+  .step-counter {
+    font-size: 11px; color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* ── SUCCESS SCREEN ── */
+  .success-screen {
+    display: none;
+    background: var(--white);
+    border-radius: 10px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.4);
+    padding: 64px 40px;
+    text-align: center;
+    animation: slideIn 0.4s ease;
+  }
+
+  .success-screen.show { display: block; }
+
+  .success-icon {
+    width: 72px; height: 72px;
+    background: linear-gradient(135deg, var(--gold) 0%, #A8852E 100%);
+    border-radius: 50%;
+    margin: 0 auto 24px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px;
+    box-shadow: 0 8px 32px rgba(201,168,76,0.4);
+  }
+
+  .success-screen h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 32px; font-weight: 600;
+    color: var(--navy);
+    margin-bottom: 12px;
+  }
+
+  .success-screen p {
+    color: var(--muted); font-size: 14px; line-height: 1.7;
+    max-width: 420px; margin: 0 auto;
+  }
+
+  .success-ref {
+    margin: 28px auto;
+    background: var(--off-white);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 24px;
+    display: inline-block;
+  }
+
+  .success-ref .label {
+    font-size: 10px; color: var(--muted); text-transform: uppercase;
+    letter-spacing: 1.5px; font-weight: 600;
+  }
+
+  .success-ref .ref-id {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px; font-weight: 700;
+    color: var(--navy);
+    letter-spacing: 1px;
+  }
+
+  .success-actions { margin-top: 32px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+  /* ── INSTRUCTIONS BANNER ── */
+  .info-banner {
+    background: linear-gradient(135deg, rgba(201,168,76,0.12) 0%, rgba(31,56,100,0.08) 100%);
+    border: 1px solid rgba(201,168,76,0.35);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom: 24px;
+    display: flex; gap: 12px; align-items: flex-start;
+    font-size: 12.5px; color: #5C4A1A;
+    line-height: 1.6;
+  }
+
+  .info-banner .icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+  /* ── COPY BUTTON ── */
+  .copy-output {
+    background: var(--off-white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 16px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--ink);
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 160px;
+    overflow-y: auto;
+    line-height: 1.8;
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ── REQUIRED NOTICE ── */
+  .required-note {
+    font-size: 11px; color: var(--muted);
+    display: flex; align-items: center; gap: 4px;
+    margin-bottom: 20px;
+  }
+
+  .required-note .req { color: #DC2626; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="site-header">
+  <div class="header-inner">
+    <div class="logo-mark">VX</div>
+    <div class="header-text">
+      <h1>VELOX <span>Properties</span></h1>
+      <p>Client Data Entry Portal</p>
+    </div>
+    <div class="header-badge">🔒 Staff Only</div>
+  </div>
+</header>
+
+<!-- PROGRESS -->
+<div class="progress-wrap">
+  <div class="progress-inner">
+    <div class="progress-step active" id="step-tab-1" onclick="goToStep(1)">
+      <div class="step-num">1</div>
+      <div class="step-label">Client Info</div>
+    </div>
+    <div class="progress-step" id="step-tab-2" onclick="goToStep(2)">
+      <div class="step-num">2</div>
+      <div class="step-label">Property</div>
+    </div>
+    <div class="progress-step" id="step-tab-3" onclick="goToStep(3)">
+      <div class="step-num">3</div>
+      <div class="step-label">Financials</div>
+    </div>
+    <div class="progress-step" id="step-tab-4" onclick="goToStep(4)">
+      <div class="step-num">4</div>
+      <div class="step-label">Realtor & Docs</div>
+    </div>
+    <div class="progress-step" id="step-tab-5" onclick="goToStep(5)">
+      <div class="step-num">5</div>
+      <div class="step-label">Status & Audit</div>
+    </div>
+  </div>
+</div>
+
+<main class="main">
+
+  <!-- ══ STEP 1: CLIENT INFO ══ -->
+  <div class="form-card active" id="card-1">
+    <div class="card-header">
+      <div class="card-header-icon">👤</div>
+      <div>
+        <h2>Client Information</h2>
+        <p>Personal details and contact information</p>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="info-banner">
+        <span class="icon">ℹ️</span>
+        <span>Fill in all available client details accurately. Fields marked <strong style="color:#DC2626">*</strong> are required. This entry will be automatically added to the master Google Sheet.</span>
+      </div>
+      <p class="required-note"><span class="req">*</span> Required field</p>
+
+      <div class="field-grid">
+
+        <div class="field span-2">
+          <label>Full Name <span class="req">*</span></label>
+          <input type="text" id="fullName" placeholder="e.g. MR JOHN PAUL OKEKE" required>
+          <span class="error-msg" id="err-fullName">⚠ Full name is required</span>
+        </div>
+
+        <div class="field span-2">
+          <label>Phone Numbers <span class="req">*</span> <span class="hint">— enter both if available</span></label>
+          <div class="phone-row">
+            <input type="tel" id="primaryPhone" placeholder="Primary phone number" required>
+            <input type="tel" id="secondaryPhone" placeholder="Secondary phone (optional)">
+          </div>
+          <span class="error-msg" id="err-primaryPhone">⚠ Primary phone is required</span>
+        </div>
+
+        <div class="field">
+          <label>WhatsApp Number <span class="hint">— if different</span></label>
+          <input type="tel" id="whatsapp" placeholder="WhatsApp number">
+        </div>
+
+        <div class="field">
+          <label>Email Address</label>
+          <input type="email" id="email" placeholder="client@email.com">
+        </div>
+
+        <div class="field">
+          <label>Birthday <span class="hint">— DD/MM/YYYY</span></label>
+          <input type="date" id="birthday" placeholder="DD/MM/YYYY">
+        </div>
+
+        <div class="field">
+          <label>ID Number <span class="hint">— NIN, passport, etc.</span></label>
+          <input type="text" id="idNumber" placeholder="Government ID number">
+        </div>
+
+        <div class="field span-2">
+          <label>Home Address</label>
+          <textarea id="address" placeholder="Full residential address including state"></textarea>
+        </div>
+
+        <div class="field">
+          <label>Client Category <span class="req">*</span></label>
+          <select id="clientCategory" required>
+            <option value="">— Select category —</option>
+            <option>INDIVIDUAL</option>
+            <option>JOINT / COUPLE</option>
+            <option>CORPORATE</option>
+            <option>INVESTOR</option>
+            <option>STAFF</option>
+            <option>VIP</option>
+            <option>DIASPORA</option>
+          </select>
+          <span class="error-msg" id="err-clientCategory">⚠ Please select a category</span>
+        </div>
+
+        <div class="field">
+          <label>Referral Source <span class="req">*</span></label>
+          <select id="referralSource" required>
+            <option value="">— How did they find us? —</option>
+            <option>REALTOR</option>
+            <option>DIRECT WALK-IN</option>
+            <option>SOCIAL MEDIA</option>
+            <option>REFERRAL — CLIENT</option>
+            <option>REFERRAL — STAFF</option>
+            <option>ONLINE AD</option>
+            <option>EXHIBITION / EVENT</option>
+            <option>OTHER</option>
+          </select>
+          <span class="error-msg" id="err-referralSource">⚠ Please select referral source</span>
+        </div>
+
+      </div>
+
+      <div class="nav-row">
+        <span class="step-counter">Step 1 of 5</span>
+        <button class="btn btn-primary" onclick="nextStep(1)">Continue → Property Details</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STEP 2: PROPERTY ══ -->
+  <div class="form-card" id="card-2">
+    <div class="card-header">
+      <div class="card-header-icon">🏡</div>
+      <div>
+        <h2>Property Details</h2>
+        <p>Estate, plot, and project information</p>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="field-grid">
+
+        <div class="field span-2">
+          <label>Estate / Project <span class="req">*</span></label>
+          <select id="estate" required>
+            <option value="">— Select estate —</option>
+            <option>BRIDGE LAYOUT</option>
+            <option>BRIDGE LAYOUT 2</option>
+            <option>CADENZA ESTATE</option>
+            <option>CAMPUS VIEW LAYOUT</option>
+            <option>CREEK HAVEN</option>
+            <option>DOWNTOWN LAYOUT</option>
+            <option>DOWNTOWN LAYOUT PHASE 2</option>
+            <option>EL - ROI</option>
+            <option>GARDENIA LAYOUT</option>
+            <option>GREENLAND GARDENS</option>
+            <option>GREENLAND GARDENS PHASE 2</option>
+            <option>HARMONY ANNEX</option>
+            <option>HARMONY LAYOUT</option>
+            <option>HAVANA GARDEN LAYOUT</option>
+            <option>HILLSIDE LAYOUT</option>
+            <option>HILLSIDE LAYOUT 1</option>
+            <option>HILLSIDE LAYOUT 2</option>
+            <option>MARYLAND ESTATE</option>
+            <option>OASIS LAYOUT</option>
+            <option>PH FARM CITY</option>
+            <option>REST POINT COMMUNITY</option>
+            <option>RETREAT ANNEX</option>
+            <option>RUBY COURT 2</option>
+            <option>RUBY COURT LAYOUT</option>
+            <option>RUBY COURT PHASE 1</option>
+            <option>THE MARQUIS</option>
+            <option>THE PHOENIX</option>
+            <option>THE RETREAT</option>
+          </select>
+          <span class="error-msg" id="err-estate">⚠ Please select an estate</span>
+        </div>
+
+        <div class="field">
+          <label>Project / Purchase Type <span class="req">*</span></label>
+          <select id="projectType" required>
+            <option value="">— Select type —</option>
+            <option>RESIDENTIAL</option>
+            <option>COMMERCIAL</option>
+            <option>INVESTMENT</option>
+            <option>COMMERCIAL / INVESTMENT</option>
+            <option>RESELLING</option>
+            <option>LAND BANKING</option>
+            <option>PERSONAL USE</option>
+            <option>BUILDING</option>
+            <option>ACRE</option>
+            <option>SINGLE PLOT</option>
+            <option>OTHER</option>
+          </select>
+          <span class="error-msg" id="err-projectType">⚠ Please select project type</span>
+        </div>
+
+        <div class="field">
+          <label>Plot Size (sqm)</label>
+          <input type="text" id="plotSize" placeholder="e.g. 460, 920, 461.5">
+        </div>
+
+        <div class="field">
+          <label>Plot Number(s)</label>
+          <input type="text" id="plotNumber" placeholder="e.g. 207, 82-83, 110-111">
+        </div>
+
+        <div class="field">
+          <label>Number of Plots <span class="req">*</span></label>
+          <select id="numPlots" required>
+            <option value="">— Select —</option>
+            <option>1</option><option>2</option><option>3</option>
+            <option>4</option><option>5</option><option>6</option>
+            <option>8</option><option>10</option><option>12</option>
+            <option>15</option><option>OTHER</option>
+          </select>
+          <span class="error-msg" id="err-numPlots">⚠ Required</span>
+        </div>
+
+        <div class="field">
+          <label>Date of Purchase <span class="req">*</span></label>
+          <input type="date" id="purchaseDate" required>
+          <span class="error-msg" id="err-purchaseDate">⚠ Date of purchase is required</span>
+        </div>
+
+      </div>
+
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="prevStep(2)">← Back</button>
+        <span class="step-counter">Step 2 of 5</span>
+        <button class="btn btn-primary" onclick="nextStep(2)">Continue → Financials</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STEP 3: FINANCIALS ══ -->
+  <div class="form-card" id="card-3">
+    <div class="card-header">
+      <div class="card-header-icon">💰</div>
+      <div>
+        <h2>Financial Details</h2>
+        <p>Payment plan, amounts, and schedule</p>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="field-grid">
+
+        <div class="field">
+          <label>Payment Plan <span class="req">*</span></label>
+          <select id="paymentPlan" required>
+            <option value="">— Select plan —</option>
+            <option>OUTRIGHT</option>
+            <option>0 - 1 MONTH</option>
+            <option>0 - 2 MONTHS</option>
+            <option>0 - 3 MONTHS</option>
+            <option>0 - 6 MONTHS</option>
+            <option>0 - 12 MONTHS</option>
+            <option>6 - 12 MONTHS</option>
+            <option>1 - 2 YEARS</option>
+            <option>OTHER</option>
+          </select>
+          <span class="error-msg" id="err-paymentPlan">⚠ Please select payment plan</span>
+        </div>
+
+        <div class="field">
+          <label>Auto Payment Status</label>
+          <select id="paymentStatus">
+            <option value="">— Select status —</option>
+            <option>COMPLETE</option>
+            <option>IN PROGRESS</option>
+            <option>PENDING</option>
+            <option>OVERDUE</option>
+            <option>DEFAULTED</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Total Amount (₦) <span class="req">*</span></label>
+          <div class="amount-wrap">
+            <span class="currency-prefix">₦</span>
+            <input type="number" id="totalAmount" placeholder="0" min="0" required>
+          </div>
+          <span class="error-msg" id="err-totalAmount">⚠ Total amount is required</span>
+        </div>
+
+        <div class="field">
+          <label>Amount Paid (₦)</label>
+          <div class="amount-wrap">
+            <span class="currency-prefix">₦</span>
+            <input type="number" id="amountPaid" placeholder="0" min="0">
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Default Fee (₦) <span class="hint">— if applicable</span></label>
+          <div class="amount-wrap">
+            <span class="currency-prefix">₦</span>
+            <input type="number" id="defaultFee" placeholder="0" min="0">
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Development Fee Status</label>
+          <select id="devFeeStatus">
+            <option value="">— Select —</option>
+            <option>PAID</option>
+            <option>PENDING</option>
+            <option>WAIVED</option>
+            <option>N/A</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Payment Start Date</label>
+          <input type="date" id="startDate">
+        </div>
+
+        <div class="field">
+          <label>Payment End Date</label>
+          <input type="date" id="endDate">
+        </div>
+
+        <div class="field">
+          <label>Next Payment Due Date</label>
+          <input type="date" id="nextPaymentDate">
+        </div>
+
+        <div class="field">
+          <label>Payment Receipt / Invoice No.</label>
+          <input type="text" id="receiptNo" placeholder="Receipt or invoice number">
+        </div>
+
+      </div>
+
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="prevStep(3)">← Back</button>
+        <span class="step-counter">Step 3 of 5</span>
+        <button class="btn btn-primary" onclick="nextStep(3)">Continue → Realtor & Docs</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STEP 4: REALTOR & DOCS ══ -->
+  <div class="form-card" id="card-4">
+    <div class="card-header">
+      <div class="card-header-icon">📋</div>
+      <div>
+        <h2>Realtor & Documentation</h2>
+        <p>Realtor details, contract, deed, and allocation status</p>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="field-grid">
+
+        <div class="section-divider"><span>Realtor</span></div>
+
+        <div class="field">
+          <label>Realtor Name</label>
+          <input type="text" id="realtorName" placeholder="Full name of realtor">
+        </div>
+
+        <div class="field">
+          <label>Realtor Phone</label>
+          <input type="tel" id="realtorPhone" placeholder="Realtor phone number">
+        </div>
+
+        <div class="field span-2">
+          <label>Realtor Email</label>
+          <input type="email" id="realtorEmail" placeholder="realtor@email.com">
+        </div>
+
+        <div class="section-divider"><span>Documentation</span></div>
+
+        <div class="field">
+          <label>Contract Status</label>
+          <select id="contractStatus">
+            <option value="">— Select —</option>
+            <option>ISSUED</option>
+            <option>PENDING</option>
+            <option>NOT ISSUED</option>
+            <option>N/A</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Deed / Survey Status</label>
+          <select id="deedStatus">
+            <option value="">— Select —</option>
+            <option>ISSUED</option>
+            <option>PENDING</option>
+            <option>IN PROGRESS</option>
+            <option>NOT ISSUED</option>
+            <option>N/A</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Date of Pick-Up</label>
+          <input type="date" id="pickupDate">
+        </div>
+
+        <div class="section-divider"><span>Physical Allocation</span></div>
+
+        <div class="field">
+          <label>Physical Allocation Status <span class="req">*</span></label>
+          <select id="allocationStatus" required>
+            <option value="">— Select —</option>
+            <option>YES - ALLOCATED</option>
+            <option>NO - PENDING</option>
+            <option>INVITED BUT MISSED</option>
+            <option>SCHEDULED</option>
+            <option>N/A</option>
+          </select>
+          <span class="error-msg" id="err-allocationStatus">⚠ Please select allocation status</span>
+        </div>
+
+        <div class="field">
+          <label>Allocation Date</label>
+          <input type="date" id="allocationDate">
+        </div>
+
+        <div class="field span-2">
+          <label>Feedback / Notes</label>
+          <textarea id="feedbackNotes" placeholder="Any notes, complaints, special requests or follow-up actions..."></textarea>
+        </div>
+
+      </div>
+
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="prevStep(4)">← Back</button>
+        <span class="step-counter">Step 4 of 5</span>
+        <button class="btn btn-primary" onclick="nextStep(4)">Continue → Audit Info</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STEP 5: AUDIT ══ -->
+  <div class="form-card" id="card-5">
+    <div class="card-header">
+      <div class="card-header-icon">🔐</div>
+      <div>
+        <h2>Audit & Submission</h2>
+        <p>Officer information and final review</p>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="field-grid">
+
+        <div class="field">
+          <label>Entered By (Officer) <span class="req">*</span></label>
+          <select id="enteredBy" required>
+            <option value="">— Select your name —</option>
+            <option>DABERECHI JAMESMITH</option>
+            <option>POLYCARP UBOKINEME</option>
+            <option>GILBERT CHIAMAKA</option>
+            <option>OKEMEME WISDOM</option>
+            <option>CYRIL-VINCENT RUTH</option>
+            <option>LUCKY OTOGBO</option>
+            <option>PEREOWEI EBELE</option>
+            <option>AJAYI BEAUTY MARTINS</option>
+            <option>CHINURU GODSWILL CHIMENEM</option>
+            <option>EGWUONWU IFEANYI</option>
+            <option>EMOMOTIMI IKHANOBA</option>
+            <option>TIMI IKHANOBA</option>
+            <option>DORIS EDE EKPE</option>
+            <option>PATIENCE OBIOSIO</option>
+            <option>GIDEON AFANTE</option>
+            <option>CHUKWUEMEKA AJIE</option>
+            <option>OBICHERE DARLINGTON</option>
+            <option>JOHN HOPE</option>
+            <option>ALASO FAVOUR</option>
+            <option>AJAYI PROMISE MARTINS</option>
+            <option>UDU MARGARET</option>
+            <option>EKEKE JUANITA</option>
+            <option>AKPUTU OGHENEMARO</option>
+            <option>NKECHI OKOLIE</option>
+            <option>EZE FRIDAY</option>
+            <option>ABIGAIL AKPAN</option>
+            <option>KALIO BELEMA</option>
+            <option>MIRACLE EZIRIM</option>
+            <option>OLUMIDE OJO</option>
+            <option>HR OFFICER</option>
+            <option>DATA ENTRY OFFICER</option>
+            <option>ADMIN OFFICER</option>
+          </select>
+          <span class="error-msg" id="err-enteredBy">⚠ Please select your name</span>
+        </div>
+
+        <div class="field">
+          <label>Date Entered</label>
+          <input type="date" id="dateEntered" readonly style="background:#F0EDE6;cursor:not-allowed;color:#6B7280;">
+        </div>
+
+        <div class="field">
+          <label>Verified By <span class="hint">— supervisor</span></label>
+          <select id="verifiedBy">
+            <option value="">— Select verifier —</option>
+            <option>DABERECHI JAMESMITH</option>
+            <option>POLYCARP UBOKINEME</option>
+            <option>GILBERT CHIAMAKA</option>
+            <option>TIMI IKHANOBA</option>
+            <option>EMOMOTIMI IKHANOBA</option>
+            <option>EGWUONWU IFEANYI</option>
+            <option>HR OFFICER</option>
+            <option>ADMIN OFFICER</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Date Verified</label>
+          <input type="date" id="dateVerified">
+        </div>
+
+        <div class="field span-2">
+          <label>Remarks / Change Log</label>
+          <textarea id="remarks" placeholder="Note any changes, corrections, or special circumstances about this entry..."></textarea>
+        </div>
+
+      </div>
+
+      <!-- SUMMARY PREVIEW -->
+      <div style="margin-top:28px;">
+        <div class="section-divider" style="grid-column:span 1"><span>Entry Summary</span></div>
+        <div id="summaryPreview" style="
+          background:var(--off-white);border:1px solid var(--border);
+          border-radius:8px;padding:18px 20px;margin-top:12px;
+          display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;
+          font-size:12px;color:var(--ink);line-height:1.8;">
+        </div>
+      </div>
+
+      <!-- GOOGLE SHEETS COPY OUTPUT -->
+      <div style="margin-top:24px;">
+        <div class="info-banner" style="margin-bottom:0">
+          <span class="icon">📊</span>
+          <div>
+            <strong>How to add to Google Sheets:</strong> After submitting, copy the row below and paste it into the next empty row on the correct estate sheet in your Google Sheet. Each value is tab-separated to paste perfectly into columns.
+          </div>
+        </div>
+        <div class="copy-output" id="copyOutput" style="display:none"></div>
+        <button class="btn btn-ghost" id="copyBtn" onclick="copyToClipboard()" style="display:none;margin-top:10px;font-size:12px">
+          📋 Copy Row to Clipboard
+        </button>
+      </div>
+
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="prevStep(5)">← Back</button>
+        <span class="step-counter">Step 5 of 5</span>
+        <button class="btn btn-submit" onclick="submitForm()">✓ Submit Entry</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SUCCESS SCREEN ══ -->
+  <div class="success-screen" id="successScreen">
+    <div class="success-icon">✓</div>
+    <h2>Entry Recorded</h2>
+    <p>The client data has been prepared successfully. Copy the row below and paste it into your Google Sheet to complete the entry.</p>
+
+    <div class="success-ref">
+      <div class="label">Reference Entry</div>
+      <div class="ref-id" id="successRef">—</div>
+    </div>
+
+    <div class="copy-output" id="successCopyOutput"></div>
+
+    <div class="success-actions">
+      <button class="btn btn-primary" onclick="copySuccessRow()">📋 Copy Row to Clipboard</button>
+      <button class="btn btn-ghost" onclick="resetForm()">+ New Client Entry</button>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  let currentStep = 1;
+  const TOTAL_STEPS = 5;
+
+  // Set today's date on Date Entered field
+  window.addEventListener('load', () => {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('dateEntered').value = today;
+  });
+
+  function goToStep(step) {
+    // Only allow going back or to completed steps
+    if (step >= currentStep) return;
+    showStep(step);
+  }
+
+  function showStep(step) {
+    document.querySelectorAll('.form-card').forEach(c => c.classList.remove('active'));
+    document.getElementById('successScreen').classList.remove('show');
+
+    const card = document.getElementById(`card-${step}`);
+    if (card) card.classList.add('active');
+
+    document.querySelectorAll('.progress-step').forEach((tab, i) => {
+      tab.classList.remove('active','done');
+      if (i + 1 === step) tab.classList.add('active');
+      else if (i + 1 < step) tab.classList.add('done');
+    });
+
+    currentStep = step;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    if (step === 5) buildSummary();
+  }
+
+  // Validation rules per step
+  const VALIDATIONS = {
+    1: [
+      { id: 'fullName',       errId: 'err-fullName',       check: v => v.trim().length > 1 },
+      { id: 'primaryPhone',   errId: 'err-primaryPhone',   check: v => v.trim().length >= 7 },
+      { id: 'clientCategory', errId: 'err-clientCategory', check: v => v !== '' },
+      { id: 'referralSource', errId: 'err-referralSource', check: v => v !== '' },
+    ],
+    2: [
+      { id: 'estate',        errId: 'err-estate',        check: v => v !== '' },
+      { id: 'projectType',   errId: 'err-projectType',   check: v => v !== '' },
+      { id: 'numPlots',      errId: 'err-numPlots',      check: v => v !== '' },
+      { id: 'purchaseDate',  errId: 'err-purchaseDate',  check: v => v !== '' },
+    ],
+    3: [
+      { id: 'paymentPlan',   errId: 'err-paymentPlan',   check: v => v !== '' },
+      { id: 'totalAmount',   errId: 'err-totalAmount',   check: v => parseFloat(v) > 0 },
+    ],
+    4: [
+      { id: 'allocationStatus', errId: 'err-allocationStatus', check: v => v !== '' },
+    ],
+    5: [
+      { id: 'enteredBy', errId: 'err-enteredBy', check: v => v !== '' },
+    ],
+  };
+
+  function nextStep(from) {
+    const rules = VALIDATIONS[from] || [];
+    let valid = true;
+
+    rules.forEach(({ id, errId, check }) => {
+      const el = document.getElementById(id);
+      const errEl = document.getElementById(errId);
+      const val = el ? el.value : '';
+      if (!check(val)) {
+        el.classList.add('error');
+        errEl.classList.add('show');
+        valid = false;
+      } else {
+        el.classList.remove('error');
+        errEl.classList.remove('show');
+      }
+    });
+
+    if (valid && from < TOTAL_STEPS) showStep(from + 1);
+    if (!valid) {
+      // Scroll to first error
+      const firstErr = document.querySelector('.error-msg.show');
+      if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
+  function prevStep(from) {
+    if (from > 1) showStep(from - 1);
+  }
+
+  function val(id) {
+    const el = document.getElementById(id);
+    return el ? el.value.trim() : '';
+  }
+
+  function buildSummary() {
+    const items = [
+      ['Full Name',        val('fullName')],
+      ['Estate',           val('estate')],
+      ['Project Type',     val('projectType')],
+      ['Plot Number(s)',   val('plotNumber') || '—'],
+      ['No. of Plots',     val('numPlots')],
+      ['Payment Plan',     val('paymentPlan')],
+      ['Total Amount',     val('totalAmount') ? '₦' + Number(val('totalAmount')).toLocaleString() : '—'],
+      ['Amount Paid',      val('amountPaid') ? '₦' + Number(val('amountPaid')).toLocaleString() : '—'],
+      ['Balance',          (val('totalAmount') && val('amountPaid')) ? '₦' + (Number(val('totalAmount')) - Number(val('amountPaid'))).toLocaleString() : '—'],
+      ['Realtor',          val('realtorName') || '—'],
+      ['Entered By',       val('enteredBy') || '—'],
+      ['Purchase Date',    val('purchaseDate') || '—'],
+    ];
+
+    const preview = document.getElementById('summaryPreview');
+    preview.innerHTML = items.map(([label, value]) => `
+      <div style="display:flex;flex-direction:column;padding:5px 0;border-bottom:1px solid var(--smoke)">
+        <span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;font-weight:600">${label}</span>
+        <span style="font-weight:500;color:var(--ink)">${value || '—'}</span>
+      </div>
+    `).join('');
+
+    // Build copy row
+    buildCopyRow();
+  }
+
+  function buildCopyRow() {
+    const today = new Date().toLocaleDateString('en-GB');
+    const balance = (val('totalAmount') && val('amountPaid'))
+      ? (Number(val('totalAmount')) - Number(val('amountPaid'))).toString()
+      : '';
+
+    const cols = [
+      '',                         // Estate ID (auto-assigned)
+      '',                         // Global ID (auto-assigned)
+      val('fullName'),
+      val('primaryPhone'),
+      val('secondaryPhone'),
+      val('whatsapp'),
+      val('email'),
+      val('birthday'),
+      val('address'),
+      val('idNumber'),
+      val('clientCategory'),
+      val('referralSource'),
+      val('projectType'),
+      val('plotSize'),
+      val('plotNumber'),
+      val('numPlots'),
+      val('paymentPlan'),
+      val('purchaseDate'),
+      val('totalAmount'),
+      val('amountPaid'),
+      balance,                    // Auto Balance
+      val('nextPaymentDate'),
+      '',                         // Outstanding installments (auto)
+      val('startDate'),
+      val('endDate'),
+      '',                         // Days to due (auto)
+      val('paymentStatus'),
+      '',                         // Overdue flag (auto)
+      val('defaultFee'),
+      val('devFeeStatus'),
+      val('realtorName'),
+      val('realtorPhone'),
+      val('realtorEmail'),
+      val('receiptNo'),
+      val('contractStatus'),
+      val('deedStatus'),
+      val('pickupDate'),
+      val('allocationStatus'),
+      val('allocationDate'),
+      val('feedbackNotes'),
+      'OK',                       // Duplicate flag (default OK)
+      '',                         // Duplicate detail
+      '',                         // Birthday this month (auto)
+      '',                         // Birthday today (auto)
+      val('estate'),
+      val('enteredBy'),
+      today,
+      val('verifiedBy'),
+      val('dateVerified'),
+      '',                         // Last updated by
+      '',                         // Last update date
+      val('remarks'),
+    ];
+
+    const rowText = cols.join('\t');
+    const el = document.getElementById('copyOutput');
+    const btn = document.getElementById('copyBtn');
+    el.textContent = rowText;
+    el.style.display = 'block';
+    btn.style.display = 'inline-block';
+    return rowText;
+  }
+
+  function copyToClipboard() {
+    const text = document.getElementById('copyOutput').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById('copyBtn');
+      btn.textContent = '✓ Copied!';
+      btn.style.background = 'var(--success-bg)';
+      btn.style.color = 'var(--success)';
+      setTimeout(() => {
+        btn.textContent = '📋 Copy Row to Clipboard';
+        btn.style.background = '';
+        btn.style.color = '';
+      }, 2500);
+    });
+  }
+
+  function copySuccessRow() {
+    const text = document.getElementById('successCopyOutput').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = event.target;
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => { btn.textContent = '📋 Copy Row to Clipboard'; }, 2500);
+    });
+  }
+
+  function submitForm() {
+    // Validate step 5
+    const rules = VALIDATIONS[5] || [];
+    let valid = true;
+    rules.forEach(({ id, errId, check }) => {
+      const el = document.getElementById(id);
+      const errEl = document.getElementById(errId);
+      const v = el ? el.value : '';
+      if (!check(v)) { el.classList.add('error'); errEl.classList.add('show'); valid = false; }
+      else { el.classList.remove('error'); errEl.classList.remove('show'); }
+    });
+    if (!valid) return;
+
+    const rowText = buildCopyRow();
+    const refId = `VELX-${Date.now().toString().slice(-6)}-${val('estate').slice(0,3).toUpperCase()}`;
+
+    // Show success
+    document.querySelectorAll('.form-card').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.progress-step').forEach(tab => tab.classList.add('done'));
+
+    const ss = document.getElementById('successScreen');
+    ss.classList.add('show');
+    document.getElementById('successRef').textContent = refId;
+    document.getElementById('successCopyOutput').textContent = rowText;
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function resetForm() {
+    document.querySelectorAll('input, select, textarea').forEach(el => {
+      if (el.type === 'date' && el.id === 'dateEntered') {
+        el.value = new Date().toISOString().split('T')[0];
+      } else if (!el.readOnly) {
+        el.value = '';
+      }
+      el.classList.remove('error');
+    });
+    document.querySelectorAll('.error-msg').forEach(e => e.classList.remove('show'));
+    document.getElementById('successScreen').classList.remove('show');
+    document.getElementById('copyOutput').style.display = 'none';
+    document.getElementById('copyBtn').style.display = 'none';
+    showStep(1);
+  }
+
+  // Live input clearing errors
+  document.querySelectorAll('input, select, textarea').forEach(el => {
+    el.addEventListener('input', () => {
+      el.classList.remove('error');
+      const errId = `err-${el.id}`;
+      const errEl = document.getElementById(errId);
+      if (errEl) errEl.classList.remove('show');
+    });
+  });
+</script>
+</body>
+</html>
